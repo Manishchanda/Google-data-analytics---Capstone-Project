@@ -1,0 +1,211 @@
+Data cleaning with sql 
+
+* Deleted null values in each row 
+
+- [ ] End_station_name	
+DELETE 
+     FROM public.combined_data
+	 WHERE end_station_name IS NULL;
+	
+
+- [ ] End_station_id
+
+DELETE 
+     FROM public.combined_data 
+	 WHERE end_station_id IS NULL;
+
+- [ ] start_station_name
+DELETE 
+     FROM public.combined_data
+	 WHERE start_station_name IS NULL;
+	 
+- [ ] COUNTED Duplicate values for all the  months
+SELECT COUNT(*) AS Duplicate_values
+    FROM public.combined_data
+	HAVING COUNT(*) > 1
+
+-There are 45,88302 Duplicated values.
+
+- [ ] COUNTED null values for start_station_name
+SELECT COUNT(*) AS TOTAL_NULL_VALUES
+   FROM public.combined_data
+
+-There are 0 values, As I Deleted them.
+
+- [ ] COUNTED null values for ride_id
+SELECT COUNT(*) AS TOTAL_NULL_VALUES
+   FROM public.combined_data
+   WHERE ride_id IS NULL;
+
+-There are 0 null values
+
+Deleting unwanted columns
+
+- [ ] Removed start_ing
+ALTER TABLE public.combined_data 
+DROP COLUMN start_ing;
+
+- [ ] Removed end_Ing
+ALTER TABLE public.combined_data 
+DROP COLUMN end_ing;
+
+- [ ] Removed start_lat because it is difficult to Analyse latitude values 
+ALTER TABLE public.combined_data 
+DROP COLUMN start_lat;
+
+- [ ] Removed end_lat
+ALTER TABLE public.combined_data 
+DROP COLUMN start_ing;
+
+- [ ] Removed start_station_id
+ALTER TABLE public.combined_data 
+DROP COLUMN start_id;
+
+- [ ] Removed end_station_id
+ALTER TABLE public.combined_data
+DROP COLUMN end_station_id;
+
+- [ ] Renamed start_station_name to Departure_station
+ALTER TABLE public.combined_data 
+RENAME start_station_name to Departure_station;
+
+- [ ] Renamed end_station_name to Arrival_station
+ALTER TABLE public.combined_data 
+RENAME end_station_name to Arrival_station;
+
+
+- [ ] Created a new column for start and end date and ungrouped date 
+Select split_part(to_char(started_at, 'YYYY:MM:DD HH:MI:SS'),' ',1) as dateColumn from public.combined_data limit 10;
+Added values in new columns
+UPDATE public.combined_data 
+SET Start_date = split_part(to_char(public.combined_data.started_at, 'YYYY:MM:DD HH:MI:SS'),' ',1);
+
+- [ ] Created a new column for week day and ride_duration for better analysis.
+Alter table public.combined_data
+ADD ride_duration Numeric;
+
+SELECT started_at,ended_at, FLOOR(EXTRACT(EPOCH FROM(ended_at - started_at)/60)) AS ride_duration FROM public.combined_data;
+
+UPDATE public.combined_data
+SET ride_duration = FLOOR(EXTRACT(EPOCH FROM(ended_at - started_at)/60));
+
+Alter table public.combined_data 
+ADD weekday text; 
+
+
+Data cleaning is done
+* Counted & Removed Null values
+* Counted duplicated values 
+* Modified start_station to Departure and End_station to arrival
+* Create a new column to extract Week day using weekday command In excel
+* Did modifications by adding ride_duration and found out difference, Data is ready for analysis.
+ —————————————————————————————————————-----------------------------------------------------------------------------------------------------------------------
+
+DATA ANALYSIS
+
+1. Calculation of Mean of ride_length
+SELECT ROUND(avg(ride_length),1)
+FROM public.combined_data;
+		
+
+2. Calculation of Mean of ride_length of member rounded to 1 decimal.  Pending for visualization.
+
+SELECT ROUND(AVG(ride_length),1) AS member_avg_ride_length
+FROM public.combined_data
+WHERE member_type = 'member';
+
+3. Calculation of max ride length as per member_type
+
+SELCT max(ride_length), member_type
+FROM public.combined_data
+GROUP BY Member_type;
+
+4. Calculation of  the average ride_length for users by day_of_week. Try columns = day_of_week; Rows = member_casual; Values = Average of ride_length.
+ 
+SELECT member_type, week_day AS day_of_week, ROUND(AVG(ride_length),2) AS avg_ride_length
+FROM public.combined_data
+GROUP BY member_type,week_day;
+
+
+5. Calculation  of the number of rides for users by day_of_week by adding Count of trip_id to Values
+
+SELECT 
+      COUNT(ride_id) AS trip_id, week_day AS day_of_week
+	  FROM public.combined_data
+	  GROUP BY week_day;
+
+
+5. Calculation of total number of rides as per member_type
+
+SELECT 
+    member_type, COUNT(ride_id) AS "Total Number Of rides"
+	FROM public.combined_data
+	GROUP BY member_type;
+
+
+
+6. Calculation of total weekly rides as per rideable_type
+
+SELECT week_day, rideable_type, COUNT(ride_id) AS "number of week rides"
+	  FROM public.combined_data
+	  GROUP BY week_day, rideable_type;
+
+
+7. Calculation of Max week rides along with rideable_type. 
+
+SELECT week_day, rideable_type, COUNT(ride_id) AS "number of week rides"
+	  FROM public.combined_data
+	  GROUP BY week_day, rideable_type
+	  ORDER BY 3 DESC LIMIT 1;	  
+
+
+
+8. Calculation of  Top 3 minimum weekly rides by  & rideable_type
+
+SELECT week_day, rideable_type, COUNT(ride_id) AS "min number of week rides"
+	  FROM public.combined_data
+	  GROUP BY week_day, rideable_type
+	  ORDER BY 3 ASC LIMIT 3;  
+
+
+9.Calculation of daily total rides as per rideable_type * pending
+
+SELECT rideable_type, start_date,
+	   COUNT(ride_id) AS "Total day rides"
+FROM public.combined_data 
+GROUP BY rideable_type, start_date
+ORDER By start_date;
+
+
+10. Calculation of monthly total ride as per rideable_type
+SELECT month_name, rideable_type,
+     COUNT(ride_id) AS "Total monthly rides"
+	 FROM public.combined_data
+	 GROUP BY month_name, rideable_type
+	 ORDER BY month_name ASC;
+
+
+
+11. Calculation of monthly max ride_duration
+SELECT month_name, rideable_type, MAX(ride_length)
+FROM public.combined_data
+GROUP BY  month_name, rideable_type;
+
+
+12. Calculation of monthly Avg ride_length which are less than 60 mins rounded to 0 decimal top10 
+
+SELECT month_name, rideable_type, ROUND (avg(ride_length),0) AS "avg ride length"
+FROM public.combined_data
+WHERE ride_length < 60
+GROUP BY  month_name, rideable_type
+Limit 10;
+
+
+13. Calculation of daily avg rides less than 60 mins rounded to 0 decimal
+
+SELECT month_name, rideable_type,
+     COUNT(ride_id) AS "Total monthly rides"
+	 FROM public.combined_data
+	 GROUP BY month_name, rideable_type
+	 ORDER BY month_name ASC;
+
