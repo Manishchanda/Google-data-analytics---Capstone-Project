@@ -192,7 +192,7 @@ FROM public.combined_data
 GROUP BY  month_name, rideable_type;
 
 
-12. Calculation of monthly Avg ride_length which are less than 60 mins rounded to 0 decimal top10 
+12. Calculation of monthly Avg ride_length which are less than 60 mins rounded to 0 decimal
 
 SELECT month_name, rideable_type, ROUND (avg(ride_length),0) AS "avg ride length"
 FROM public.combined_data
@@ -200,12 +200,12 @@ WHERE ride_length < 60
 GROUP BY  month_name, rideable_type
 Limit 10;
 
-
-13. Calculation of daily avg rides less than 60 mins rounded to 0 decimal
-
-SELECT month_name, rideable_type,
-     COUNT(ride_id) AS "Total monthly rides"
+13. Calculation of TOP 15 daily avg rides less than 60 mins rounded to 1 decimal
+SELECT rideable_type, start_date, member_type,
+    ROUND (avg(ride_length),1) AS "avg daily rides"
 	 FROM public.combined_data
-	 GROUP BY month_name, rideable_type
-	 ORDER BY month_name ASC;
+	 GROUP BY rideable_type, start_date, member_type
+	 LIMIT 15;
+
+
 
